@@ -2,6 +2,7 @@ import javafx.application.Application
 import javafx.geometry.Pos
 import javafx.scene.Scene
 import javafx.scene.control.Label
+import javafx.scene.input.KeyCode
 import javafx.scene.layout.*
 import javafx.scene.paint.Color
 import javafx.scene.text.Font
@@ -28,15 +29,22 @@ class SudokuGUI : Application() {
     private val labelMap = mutableMapOf<Pair<Int, Int>, Label>()
     private var selected: Pair<Int, Int>? = null
 
+    private val unsolvedSquaresList = mutableListOf<Pair<Int, Int>>()
+
     override fun start(primaryStage: Stage) {
         init(primaryStage)
     }
 
     private fun init(stage: Stage) {
         val s = Sudoku()
-        solution = s.getGrid().clone()
-        s.removeDigits()
+        solution = s.getSolution()
         val grid = s.getGrid()
+
+        for (row in 0..8) {
+            for (col in 0..8) {
+                unsolvedSquaresList.add(Pair(row, col))
+            }
+        }
 
         val redBorder = Border(BorderStroke(Color.RED, BorderStrokeStyle.SOLID, CornerRadii.EMPTY,
             BorderWidths(3.0, 3.0, 3.0, 3.0, false, false, false, false)))
@@ -73,9 +81,15 @@ class SudokuGUI : Application() {
             if (e.text.matches("\\d".toRegex()) && selected != null) move(e.text!!)
             else if (e.isControlDown && e.text == "z") undo()
             else if (e.isControlDown && e.text == "y") redo()
+            else if (e.isControlDown && e.code == KeyCode.SPACE) showRandomMove()
         }
 
         stage.show()
+    }
+
+    private fun showRandomMove() {
+        val position = unsolvedSquaresList[Random.nextInt(unsolvedSquaresList.size)]
+        labelMap[position]!!.text = solution[position.first][position.second].toString()
     }
 
     private fun move( text: String) {
@@ -89,20 +103,16 @@ class SudokuGUI : Application() {
 
         selectedLabel!!.text = text
 
-        if (isSolved()) {
-            println("DONE! :D:D:D:D:D:D")
+        if (solution[selected!!.first][selected!!.second].toString() == text) {
+            if (isSolved()) {
+                println("DONE! :D:D:D:D:D:D")
+            }
+            unsolvedSquaresList.remove(selected!!)
         }
     }
 
     private fun isSolved(): Boolean {
-        for (row in 0..8) {
-            for (col in 0..8) {
-                if (solution[row][col].toString() != labelMap[Pair(row, col)]!!.text) {
-                    return false
-                }
-            }
-        }
-        return true
+        return unsolvedSquaresList.isEmpty()
     }
 
     private fun undo() {

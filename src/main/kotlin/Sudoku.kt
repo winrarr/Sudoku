@@ -2,17 +2,22 @@ import kotlin.random.Random
 
 class Sudoku(private val level: Level = Level.JUNIOR) {
 
-    private val grid = Array(GRID_SIZE) { IntArray(GRID_SIZE) {0} }
+    private var grid = Array(GRID_SIZE) { IntArray(GRID_SIZE) {0} }
+    private lateinit var solution: Array<IntArray>
+
+    private fun Array<IntArray>.copy() = Array(size) { get(it).clone() }
 
     init {
         fillGrid()
     }
 
     fun getGrid() = grid
+    fun getSolution() = solution
 
     private fun fillGrid() {
         fillDiagonalBoxes()
         fillRemaining(0, GRID_SIZE_SQUARE_ROOT)
+        solution = grid.copy()
         removeDigits()
     }
 
@@ -114,20 +119,29 @@ class Sudoku(private val level: Level = Level.JUNIOR) {
         return true
     }
 
-    fun removeDigits() {
+    fun removeDigits(): Array<IntArray> {
+        val start = System.currentTimeMillis()
         var digitsToRemove = GRID_SIZE * GRID_SIZE - level.numberOfProvidedDigits
 
         while (digitsToRemove > 0) {
+            if (System.currentTimeMillis() - start > 2000) {
+                grid = Array(GRID_SIZE) { IntArray(GRID_SIZE) {0} }
+                fillGrid()
+                return removeDigits()
+            }
             val randomRow = generateRandomInt(MIN_DIGIT_INDEX, MAX_DIGIT_INDEX)
             val randomColumn = generateRandomInt(MIN_DIGIT_INDEX, MAX_DIGIT_INDEX)
 
-            val digitToRemove = grid[randomRow][randomColumn]
-            grid[randomRow][randomColumn] = 0
-            if (!Solver.solvable(grid)) {
-                grid[randomRow][randomColumn] = digitToRemove
-            } else {
-                digitsToRemove--
+            if (grid[randomRow][randomColumn] != 0) {
+                val digitToRemove = grid[randomRow][randomColumn]
+                grid[randomRow][randomColumn] = 0
+                if (!Solver.solvable(grid)) {
+                    grid[randomRow][randomColumn] = digitToRemove
+                } else {
+                    digitsToRemove--
+                }
             }
         }
+        return grid
     }
 }
