@@ -1,6 +1,6 @@
 import kotlin.random.Random
 
-class Sudoku(private val level: Level = Level.JUNIOR) {
+open class SudokuGrid(private val level: Level = Level.JUNIOR) {
 
     private var grid = Array(GRID_SIZE) { IntArray(GRID_SIZE) {0} }
     private lateinit var solution: Array<IntArray>
@@ -11,8 +11,8 @@ class Sudoku(private val level: Level = Level.JUNIOR) {
         fillGrid()
     }
 
-    fun getGrid() = grid
-    fun getSolution() = solution
+    open fun getGrid() = grid
+    open fun getSolution() = solution
 
     private fun fillGrid() {
         fillDiagonalBoxes()
@@ -119,7 +119,7 @@ class Sudoku(private val level: Level = Level.JUNIOR) {
         return true
     }
 
-    fun removeDigits(): Array<IntArray> {
+    fun removeDigits() {
         val start = System.currentTimeMillis()
         var digitsToRemove = GRID_SIZE * GRID_SIZE - level.numberOfProvidedDigits
 
@@ -127,7 +127,6 @@ class Sudoku(private val level: Level = Level.JUNIOR) {
             if (System.currentTimeMillis() - start > 2000) {
                 grid = Array(GRID_SIZE) { IntArray(GRID_SIZE) {0} }
                 fillGrid()
-                return removeDigits()
             }
             val randomRow = generateRandomInt(MIN_DIGIT_INDEX, MAX_DIGIT_INDEX)
             val randomColumn = generateRandomInt(MIN_DIGIT_INDEX, MAX_DIGIT_INDEX)
@@ -142,6 +141,5 @@ class Sudoku(private val level: Level = Level.JUNIOR) {
                 }
             }
         }
-        return grid
     }
 }

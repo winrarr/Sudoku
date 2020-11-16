@@ -6,15 +6,19 @@ plugins {
 group = "me.kt"
 version = "1.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-}
 dependencies {
-    testImplementation(kotlin("test-junit5"))
     implementation("no.tornado:tornadofx:1.7.20")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.4.10")
+    testImplementation(kotlin("test-junit5"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.4.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.4.2")
 }
-tasks.withType<KotlinCompile>() {
+tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 repositories {
