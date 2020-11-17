@@ -2,10 +2,17 @@ internal object Solver {
 
     lateinit var grid: Array<IntArray>
 
-    fun solvable(grid: Array<IntArray>) : Boolean {
-        this.grid = grid.copy()
+    fun solvable(grid: Array<IntArray>): Boolean {
+        val solution = solve(grid)
+        return solution != null
+    }
 
-        return solve()
+    fun solve(grid: Array<IntArray>): Array<IntArray>? {
+        this.grid = grid.copy()
+        if (solve()) {
+            return grid
+        }
+        return null
     }
 
     private fun Array<IntArray>.copy() = Array(size) { get(it).clone() }

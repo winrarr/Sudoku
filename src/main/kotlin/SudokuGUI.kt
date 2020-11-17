@@ -49,7 +49,7 @@ class SudokuGUI(private val game: SudokuGame) : Application() {
                 val square = labelMap[row][col]
 
                 square.setOnMouseClicked {
-                    if (game.getSelectedCell() != null) {
+                    if (game.getSelectedNum() != null) {
                         selectedLabel.border = getBorder(selected!!)
                     }
                     selected = row to col
@@ -59,7 +59,7 @@ class SudokuGUI(private val game: SudokuGame) : Application() {
                 square.border = getBorder(row to col)
                 square.font = Font.font(30.0)
                 square.alignment = Pos.CENTER
-                val gridNum = game.getCellAt(row, col).num
+                val gridNum = game.getNumAt(row, col)
                 square.text = if (gridNum != 0) gridNum.toString() else ""
 
                 gridPane.add(square, col, row)
@@ -70,11 +70,11 @@ class SudokuGUI(private val game: SudokuGame) : Application() {
         stage.scene = Scene(gridPane, 500.0, 500.0)
 
         stage.scene.setOnKeyPressed { e ->
-            if (e.text.matches("\\d".toRegex()) && selected != null) move(e.text!!)
-            else if (e.code == KeyCode.ESCAPE) delete()
-            else if (e.isControlDown && e.text == "z") undo()
-            else if (e.isControlDown && e.text == "y") redo()
-            else if (e.isControlDown && e.code == KeyCode.SPACE) showRandomMove()
+            if (e.text.matches("\\d".toRegex()) && game.getSelectedNum() != null) game.setSelectedNum(e.text.toInt())
+            else if (e.code == KeyCode.ESCAPE) game.deleteSelectedNum()
+            else if (e.isControlDown && e.text == "z") game.undo()
+            else if (e.isControlDown && e.text == "y") game.redo()
+            else if (e.isControlDown && e.code == KeyCode.SPACE) game.showRandomSolutionCell()
         }
 
         stage.show()
@@ -94,6 +94,6 @@ class SudokuGUI(private val game: SudokuGame) : Application() {
     }
 
     fun updateSquareAt(row: Int, col: Int) {
-        labelMap[row][col].text = "1"
+        labelMap[row][col].text = game.getNumAt(row, col).toString()
     }
 }

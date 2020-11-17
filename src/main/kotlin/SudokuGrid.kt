@@ -3,7 +3,6 @@ import kotlin.random.Random
 open class SudokuGrid(private val level: Level = Level.JUNIOR) {
 
     private var grid = Array(GRID_SIZE) { IntArray(GRID_SIZE) {0} }
-    private lateinit var solution: Array<IntArray>
 
     private fun Array<IntArray>.copy() = Array(size) { get(it).clone() }
 
@@ -12,12 +11,10 @@ open class SudokuGrid(private val level: Level = Level.JUNIOR) {
     }
 
     open fun getGrid() = grid
-    open fun getSolution() = solution
 
     private fun fillGrid() {
         fillDiagonalBoxes()
         fillRemaining(0, GRID_SIZE_SQUARE_ROOT)
-        solution = grid.copy()
         removeDigits()
     }
 
