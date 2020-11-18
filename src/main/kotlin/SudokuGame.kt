@@ -35,9 +35,7 @@ open class SudokuGame(level: Level) {
 
     fun getSelectedNum(): Int? {
         val selected = selected
-        return if (selected != null) {
-            getNumAt(selected.first, selected.second)
-        } else null
+        return selected?.let { getNumAt(selected.first, selected.second) }
     }
 
     fun getNumAt(row: Int, col: Int): Int {
@@ -94,8 +92,7 @@ open class SudokuGame(level: Level) {
     }
 
     private fun getRandomBlank(): Pair<Int, Int>? {
-        if (blanks.isNotEmpty()) return blanks.random()
-        return null
+        return if (blanks.isNotEmpty()) blanks.random() else null
     }
 
     private fun getSolutionAt(row: Int, col: Int): Int? {

@@ -203,7 +203,7 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
             alert.headerText = null
             alert.contentText =
                 "CTRL + SPACE:     Hint (fill out a random square)\n" +
-                        "ESCAPE:     Delete the number at the selected square" +
+                        "ESCAPE:     Delete the number at the selected square\n" +
                         "CTRL + Z:     Undo\n" +
                         "CTRL + Y:     Redo"
             alert.showAndWait()
