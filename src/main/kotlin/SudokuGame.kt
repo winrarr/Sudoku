@@ -1,16 +1,33 @@
+import javafx.scene.control.Alert
 import java.util.*
 
-open class SudokuGame(sudokuGrid: SudokuGrid, vararg observers: SudokuGUI) {
+open class SudokuGame(sudokuGrid: SudokuGrid = SudokuGrid()) {
 
-    private val observers: List<SudokuGUI> = observers.toList()
+    private val observers = mutableListOf<SudokuGUI>()
 
-    private val grid: Array<IntArray> = sudokuGrid.getGrid()
-    private val givenNumbers: Array<IntArray> = grid.copyOf()
-    private val moveHistory = mutableListOf<Move>()
+    private var grid: Array<IntArray> = sudokuGrid.getGrid()
+    private var givenNumbers: Array<IntArray> = sudokuGrid.getGrid()
+    private var moveHistory = mutableListOf<Move>()
+
+    private var blanks = mutableSetOf<Pair<Int, Int>>()
 
     private var moveCount = 0
 
     private var selected: Pair<Int, Int>? = null
+
+    init {
+        for (row in 0..8) {
+            for (col in 0..8) {
+                if (grid[row][col] == 0) {
+                    blanks.add(row to col)
+                }
+            }
+        }
+    }
+
+    fun addObserver(observer: SudokuGUI) {
+        observers.add(observer)
+    }
 
     fun setSelected(position: Pair<Int, Int>) {
         selected = position
@@ -23,13 +40,34 @@ open class SudokuGame(sudokuGrid: SudokuGrid, vararg observers: SudokuGUI) {
         } else null
     }
 
+    fun getNumAt(row: Int, col: Int): Int {
+        return grid[row][col]
+    }
+
+    private fun setNumAt(row: Int, col: Int, num: Int) {
+        grid[row][col] = num
+        blanks.remove(row to col)
+        notifyCellUpdated(row, col)
+        checkSolved()
+    }
+
     fun setSelectedNum(num: Int): Boolean {
         if (selectedIsGiven()) return false
         val selected = selected ?: return false
+        moveCount++
         addMoveToHistory(getSelectedNum()!!, num)
         setNumAt(selected.first, selected.second, num)
-        moveCount++
         return true
+    }
+
+    private fun addMoveToHistory(from: Int, to: Int) {
+        val selected = selected!!
+        val move = Move(selected.first, selected.second, from, to)
+        if (moveCount > moveHistory.size - 1) {
+            moveHistory.add(move)
+        } else {
+            moveHistory[moveCount] = move
+        }
     }
 
     private fun selectedIsGiven(): Boolean {
@@ -37,68 +75,56 @@ open class SudokuGame(sudokuGrid: SudokuGrid, vararg observers: SudokuGUI) {
         return givenNumbers[selected.first][selected.second] != 0
     }
 
-    fun getNumAt(row: Int, col: Int): Int {
-        return grid[row][col]
-    }
-
-    private fun getSolutionAt(row: Int, col: Int): Int {
-        val solution = Solver.solve(grid) ?: return -1
-        return solution[row][col]
-    }
-
-    private fun setNumAt(row: Int, col: Int, num: Int) {
-        grid[row][col] = num
+    private fun deleteAt(row: Int, col: Int) {
+        setSelectedNum(0)
         notifyCellUpdated(row, col)
     }
 
-    private fun setFinalNum(row: Int, col: Int, num: Int) {
-        setNumAt(row, col, num)
-    }
-
     fun deleteSelectedNum() {
-        setSelectedNum(0)
+        val selected = selected
+        selected?.let { deleteAt(selected.first, selected.second) }
         moveCount++
     }
 
-    private fun addMoveToHistory(from: Int, to: Int) {
-        val selected = selected!!
-        val move = Move(selected.first, selected.second, from, to)
-        if (moveCount > moveHistory.size) {
-            moveHistory.add(move)
-        } else {
-            moveHistory[moveCount] = move
-        }
+    fun showRandomSolutionCell(): Pair<Boolean, Boolean> {
+        val (row, col) = getRandomBlank() ?: return true to false
+        val solution = getSolutionAt(row, col) ?: return false to true
+        setNumAt(row, col, solution)
+        return true to true
     }
 
-    fun showRandomSolutionCell() {
-        val (row, col) = getRandomBlank()
-        setFinalNum(row, col, getSolutionAt(row, col))
+    private fun getRandomBlank(): Pair<Int, Int>? {
+        if (blanks.isNotEmpty()) return blanks.random()
+        return null
     }
 
-    private fun getRandomBlank(): Pair<Int, Int> {
-        while (true) {
-            val row = Random().nextInt(9)
-            val col = Random().nextInt(9)
-            if (getNumAt(row, col) == 0) return row to col
-        }
+    private fun getSolutionAt(row: Int, col: Int): Int? {
+        return Solver.solve(grid)?.let { it[row][col] }
     }
 
      fun undo() {
+         if (moveCount > 0) moveCount--
          val move = moveHistory[moveCount]
          setNumAt(move.row, move.col, move.before)
-         moveCount--
     }
 
     fun redo() {
-        moveCount++
+        if (moveCount >= moveHistory.size) return
         val move = moveHistory[moveCount]
         setNumAt(move.row, move.col, move.after)
+        moveCount++
+    }
+
+    private fun checkSolved() {
+        if (isSolved()) {
+            observers.forEach(SudokuGUI::hasWon)
+        }
     }
 
     fun isSolved(): Boolean {
 
         for (row in 0..8) {
-            val numbersLeft = (1..9).toMutableList()
+            val numbersLeft = (1..9).toMutableSet()
             for (col in 0..8) {
                 if (!numbersLeft.remove(getNumAt(row, col))) return false
             }
@@ -106,7 +132,7 @@ open class SudokuGame(sudokuGrid: SudokuGrid, vararg observers: SudokuGUI) {
         }
 
         for (col in 0..8) {
-            val numbersLeft = (1..9).toMutableList()
+            val numbersLeft = (1..9).toMutableSet()
             for (row in 0..8) {
                 if (!numbersLeft.remove(getNumAt(row, col))) return false
             }
@@ -115,9 +141,9 @@ open class SudokuGame(sudokuGrid: SudokuGrid, vararg observers: SudokuGUI) {
 
         for (boxRow in 0..2) {
             for (boxCol in 0..2) {
-                val numbersLeft = (1..9).toMutableList()
-                for (row in (3*boxRow)..(3*boxRow+1)) {
-                    for (col in (3*boxCol)..(3*boxCol+1)) {
+                val numbersLeft = (1..9).toMutableSet()
+                for (row in (3*boxRow)..(3*boxRow+2)) {
+                    for (col in (3*boxCol)..(3*boxCol+2)) {
                         if (!numbersLeft.remove(getNumAt(row, col))) return false
                     }
                 }
@@ -126,7 +152,6 @@ open class SudokuGame(sudokuGrid: SudokuGrid, vararg observers: SudokuGUI) {
         }
 
         return true
-
     }
 
     private fun notifyCellUpdated(row: Int, col: Int) {

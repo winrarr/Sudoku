@@ -1,58 +1,95 @@
 import javafx.application.Application
 import javafx.geometry.Pos
 import javafx.scene.Scene
-import javafx.scene.control.Label
+import javafx.scene.control.*
 import javafx.scene.input.KeyCode
 import javafx.scene.layout.*
 import javafx.scene.paint.Color
 import javafx.scene.text.Font
 import javafx.stage.Stage
+import tornadofx.add
 import tornadofx.fitToParentSize
 
-class SudokuGUI(private val game: SudokuGame) : Application() {
+class SudokuGUI(private var game: SudokuGame = SudokuGame()) : Application() {
 
-    private lateinit var solution: Array<IntArray>
-
-    private var moveCount = 0
-
-    // move number -> position, change
-    // move number -> (row, col), (beforeNumber, afterNumber)
-    private val moveHistory = mutableListOf<Move>()
-
-    private val labelMap = Array(9) { Array(9) { Label() } }
+    private lateinit var labelArray: Array<Array<Label>>
 
     private var selected: Pair<Int, Int>? = null
-    private val selectedLabel = labelMap[selected!!.first][selected!!.second]
-
-    private fun getLabel(position: Pair<Int, Int>) = labelMap[position.first][position.second]
-
-    private val unsolvedSquaresList = mutableListOf<Pair<Int, Int>>()
 
     override fun start(primaryStage: Stage) {
         init(primaryStage)
     }
 
     private fun init(stage: Stage) {
-        for (row in 0..8) {
-            for (col in 0..8) {
-                unsolvedSquaresList.add(row to col)
-            }
-        }
+
+        // Initialise
+        game.addObserver(this)
+        labelArray = Array(9) { Array(9) { Label() } }
 
         val redBorder = Border(BorderStroke(Color.RED, BorderStrokeStyle.SOLID, CornerRadii.EMPTY,
             BorderWidths(3.0, 3.0, 3.0, 3.0, false, false, false, false)))
 
+        // Menu bar
+        val menuBar = MenuBar()
+
+        // File menu
+        val fileMenu = Menu("File")
+        menuBar.menus.add(fileMenu)
+
+        val newGame = MenuItem("New game")
+        newGame.setOnAction {
+            restart()
+        }
+        fileMenu.items.add(newGame)
+
+        val undo = MenuItem("Undo")
+        undo.setOnAction {
+            game.undo()
+        }
+        fileMenu.items.add(undo)
+
+        val redo = MenuItem("Redo")
+        redo.setOnAction {
+            game.redo()
+        }
+        fileMenu.items.add(redo)
+
+        val hint = MenuItem("Hint")
+        hint.setOnAction {
+            game.showRandomSolutionCell()
+        }
+        fileMenu.items.add(hint)
+
+        //Help menu
+        val helpMenu = Menu("Help")
+        menuBar.menus.add(helpMenu)
+
+        val shortcuts = MenuItem("Shortcuts")
+        shortcuts.setOnAction {
+            val alert = Alert(Alert.AlertType.INFORMATION)
+            alert.title = "Shortcuts"
+            alert.headerText = null
+            alert.contentText =
+                  "CTRL + SPACE:     Hint (fill out a random square)\n" +
+                  "ESCAPE:     Delete the number at the selected square" +
+                  "CTRL + Z:     Undo\n" +
+                  "CTRL + Y:     Redo"
+            alert.showAndWait()
+        }
+        helpMenu.items.add(shortcuts)
+
+        val root = VBox(menuBar)
+
         val gridPane = GridPane()
+        root.add(gridPane)
+        gridPane.fitToParentSize()
 
         for (row in 0..8) {
             for (col in 0..8) {
-                val square = labelMap[row][col]
+                val square = labelArray[row][col]
 
                 square.setOnMouseClicked {
-                    if (game.getSelectedNum() != null) {
-                        selectedLabel.border = getBorder(selected!!)
-                    }
-                    selected = row to col
+                    setSelected(row to col)
                     square.border = redBorder
                 }
 
@@ -67,17 +104,55 @@ class SudokuGUI(private val game: SudokuGame) : Application() {
             }
         }
 
-        stage.scene = Scene(gridPane, 500.0, 500.0)
+        stage.scene = Scene(root, 500.0, 500.0)
 
         stage.scene.setOnKeyPressed { e ->
-            if (e.text.matches("\\d".toRegex()) && game.getSelectedNum() != null) game.setSelectedNum(e.text.toInt())
-            else if (e.code == KeyCode.ESCAPE) game.deleteSelectedNum()
-            else if (e.isControlDown && e.text == "z") game.undo()
-            else if (e.isControlDown && e.text == "y") game.redo()
-            else if (e.isControlDown && e.code == KeyCode.SPACE) game.showRandomSolutionCell()
+            when {
+                e.text.matches("\\d".toRegex()) && game.getSelectedNum() != null -> game.setSelectedNum(e.text.toInt())
+                e.code == KeyCode.ESCAPE -> game.deleteSelectedNum()
+                e.isControlDown && e.text == "z" -> game.undo()
+                e.isControlDown && e.text == "y" -> game.redo()
+                e.isControlDown && e.code == KeyCode.SPACE -> {
+                    val (solvable, isBlank) = game.showRandomSolutionCell()
+                    if (!solvable) {
+                        val alert = Alert(Alert.AlertType.ERROR)
+                        alert.title = "Unsolvable"
+                        alert.headerText = null
+                        alert.contentText = "The current sudoku could not be solved, you have made a mistake"
+                        alert.showAndWait()
+                    } else if (!isBlank) {
+                        val alert = Alert(Alert.AlertType.INFORMATION)
+                        alert.title = "Complete"
+                        alert.headerText = null
+                        alert.contentText = "The sudoku is already complete"
+                        alert.showAndWait()
+                    }
+                }
+            }
         }
 
+        stage.minWidthProperty().set(500.0)
+        stage.minHeightProperty().set(500.0)
         stage.show()
+    }
+
+    private fun restart() {
+        game = game.javaClass.newInstance()
+        game.addObserver(this)
+        for (row in 0..8) {
+            for (col in 0..8) {
+                updateSquareAt(row, col)
+            }
+        }
+    }
+
+    private fun setSelected(position: Pair<Int, Int>) {
+        val selected = selected
+        if (selected != null) {
+            labelArray[selected.first][selected.second].border = getBorder(selected)
+        }
+        this.selected = position
+        game.setSelected(position)
     }
 
     private fun getBorder(position: Pair<Int, Int>): Border {
@@ -94,6 +169,15 @@ class SudokuGUI(private val game: SudokuGame) : Application() {
     }
 
     fun updateSquareAt(row: Int, col: Int) {
-        labelMap[row][col].text = game.getNumAt(row, col).toString()
+        val num = game.getNumAt(row, col)
+        labelArray[row][col].text = if (num == 0) "" else num.toString()
+    }
+
+    fun hasWon() {
+        val alert = Alert(Alert.AlertType.INFORMATION)
+        alert.title = "Complete"
+        alert.headerText = null
+        alert.contentText = "Congratulations! You have solved the sudoku"
+        alert.showAndWait()
     }
 }

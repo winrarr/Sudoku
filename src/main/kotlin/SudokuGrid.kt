@@ -7,12 +7,12 @@ open class SudokuGrid(private val level: Level = Level.JUNIOR) {
     private fun Array<IntArray>.copy() = Array(size) { get(it).clone() }
 
     init {
-        fillGrid()
+        newGrid()
     }
 
-    open fun getGrid() = grid
+    open fun getGrid() = grid.copy()
 
-    private fun fillGrid() {
+    private fun newGrid() {
         fillDiagonalBoxes()
         fillRemaining(0, GRID_SIZE_SQUARE_ROOT)
         removeDigits()
@@ -123,7 +123,7 @@ open class SudokuGrid(private val level: Level = Level.JUNIOR) {
         while (digitsToRemove > 0) {
             if (System.currentTimeMillis() - start > 2000) {
                 grid = Array(GRID_SIZE) { IntArray(GRID_SIZE) {0} }
-                fillGrid()
+                newGrid()
             }
             val randomRow = generateRandomInt(MIN_DIGIT_INDEX, MAX_DIGIT_INDEX)
             val randomColumn = generateRandomInt(MIN_DIGIT_INDEX, MAX_DIGIT_INDEX)

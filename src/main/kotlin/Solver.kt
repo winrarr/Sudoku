@@ -1,89 +1,55 @@
+import java.lang.RuntimeException
+
 internal object Solver {
 
     lateinit var grid: Array<IntArray>
 
     fun solvable(grid: Array<IntArray>): Boolean {
-        val solution = solve(grid)
-        return solution != null
+        this.grid = grid.copy()
+        return solve()
     }
 
     fun solve(grid: Array<IntArray>): Array<IntArray>? {
         this.grid = grid.copy()
-        if (solve()) {
-            return grid
-        }
-        return null
+        return if (solve()) {
+            this.grid
+        } else null
     }
 
     private fun Array<IntArray>.copy() = Array(size) { get(it).clone() }
 
-    private fun solve() : Boolean {
-        for (i in 0 until GRID_SIZE) {
-            for (j in 0 until GRID_SIZE) {
-                if (grid[i][j] == 0) {
-                    val availableDigits = getAvailableDigits(i, j)
-                    for (k in availableDigits) {
-                        grid[i][j] = k
-                        if (solve()) {
-                            return true
-                        }
-                        grid[i][j] = 0
-                    }
-                    return false
-                }
-            }
+    private fun solve(row: Int = 0, col: Int = 0) : Boolean {
+        if (row >= 9) return true
+        if (col >= 9) return solve(row+1, 0)
+        if (grid[row][col] != 0) return solve(row, col+1)
+        for (k in getAvailableDigits(row, col)) {
+            grid[row][col] = k
+            if (solve(row, col+1)) return true
         }
-        return true
+        grid[row][col] = 0
+        return false
     }
 
-    private fun getAvailableDigits(row: Int, column: Int) : Iterable<Int> {
-        val digitsRange = MIN_DIGIT_VALUE..MAX_DIGIT_VALUE
-        val availableDigits = mutableSetOf<Int>()
-        availableDigits.addAll(digitsRange)
+    private fun getAvailableDigits(row: Int, col: Int) : Iterable<Int> {
 
-        truncateByDigitsAlreadyUsedInRow(availableDigits, row)
-        if (availableDigits.size > 1) {
-            truncateByDigitsAlreadyUsedInColumn(availableDigits, column)
+        val availableDigits = (1..9).toMutableSet()
+
+        for (col in 0..8) {
+            availableDigits.remove(grid[row][col])
         }
-        if (availableDigits.size > 1) {
-            truncateByDigitsAlreadyUsedInBox(availableDigits, row, column)
+
+        for (row in 0..8) {
+            availableDigits.remove(grid[row][col])
+        }
+
+        val boxStartRow = row / 3 * 3
+        val boxStartCol = col / 3 * 3
+        for (row in boxStartRow..boxStartRow+2) {
+            for (col in boxStartCol..boxStartCol+2) {
+                availableDigits.remove(grid[row][col])
+            }
         }
 
         return availableDigits.asIterable()
     }
-
-    private fun truncateByDigitsAlreadyUsedInRow(availableDigits: MutableSet<Int>, row: Int) {
-        for (i in MIN_DIGIT_INDEX..MAX_DIGIT_INDEX) {
-            if (grid[row][i] != 0) {
-                availableDigits.remove(grid[row][i])
-            }
-        }
-    }
-
-    private fun truncateByDigitsAlreadyUsedInColumn(availableDigits: MutableSet<Int>, column: Int) {
-        for (i in MIN_DIGIT_INDEX..MAX_DIGIT_INDEX) {
-            if (grid[i][column] != 0) {
-                availableDigits.remove(grid[i][column])
-            }
-        }
-    }
-
-    private fun truncateByDigitsAlreadyUsedInBox(availableDigits: MutableSet<Int>, row: Int, column: Int) {
-        val rowStart = findBoxStart(row)
-        val rowEnd = findBoxEnd(rowStart)
-        val columnStart = findBoxStart(column)
-        val columnEnd = findBoxEnd(columnStart)
-
-        for (i in rowStart until rowEnd) {
-            for (j in columnStart until columnEnd) {
-                if (grid[i][j] != 0) {
-                    availableDigits.remove(grid[i][j])
-                }
-            }
-        }
-    }
-
-    private fun findBoxStart(index: Int) = index - index % GRID_SIZE_SQUARE_ROOT
-
-    private fun findBoxEnd(index: Int) = index + BOX_SIZE - 1
 }

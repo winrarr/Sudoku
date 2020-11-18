@@ -1,5 +1,5 @@
 import javafx.application.Application
 
 fun main() {
-    Application.launch(SudokuGUI::class.java)
+    Application.launch(SudokuGUI()::class.java)
 }
