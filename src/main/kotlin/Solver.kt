@@ -1,5 +1,3 @@
-import java.lang.RuntimeException
-
 internal object Solver {
 
     lateinit var grid: Array<IntArray>

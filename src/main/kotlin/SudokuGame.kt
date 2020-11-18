@@ -1,10 +1,8 @@
-import javafx.scene.control.Alert
-import java.util.*
-
-open class SudokuGame(sudokuGrid: SudokuGrid = SudokuGrid()) {
+open class SudokuGame(level: Level) {
 
     private val observers = mutableListOf<SudokuGUI>()
 
+    private val sudokuGrid = SudokuGrid(level)
     private var grid: Array<IntArray> = sudokuGrid.getGrid()
     private var givenNumbers: Array<IntArray> = sudokuGrid.getGrid()
     private var moveHistory = mutableListOf<Move>()

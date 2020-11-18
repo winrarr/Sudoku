@@ -1,6 +1,6 @@
 import kotlin.random.Random
 
-open class SudokuGrid(private val level: Level = Level.JUNIOR) {
+open class SudokuGrid(private val level: Level = Level.EASY) {
 
     private var grid = Array(GRID_SIZE) { IntArray(GRID_SIZE) {0} }
 

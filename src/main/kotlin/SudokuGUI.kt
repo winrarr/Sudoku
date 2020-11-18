@@ -10,7 +10,9 @@ import javafx.stage.Stage
 import tornadofx.add
 import tornadofx.fitToParentSize
 
-class SudokuGUI(private var game: SudokuGame = SudokuGame()) : Application() {
+class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Application() {
+
+    private var level = Level.EASY
 
     private lateinit var labelArray: Array<Array<Label>>
 
@@ -59,6 +61,31 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame()) : Application() {
             game.showRandomSolutionCell()
         }
         fileMenu.items.add(hint)
+
+        // Level
+        val levelMenu = Menu("Level")
+        menuBar.menus.add(levelMenu)
+
+        val easy = MenuItem("Easy")
+        easy.setOnAction {
+            level = Level.EASY
+            restart()
+        }
+        levelMenu.items.add(easy)
+
+        val medium = MenuItem("Medium")
+        medium.setOnAction {
+            level = Level.MEDIUM
+            restart()
+        }
+        levelMenu.items.add(medium)
+
+        val hard = MenuItem("Hard")
+        hard.setOnAction {
+            level = Level.HARD
+            restart()
+        }
+        levelMenu.items.add(hard)
 
         //Help menu
         val helpMenu = Menu("Help")
@@ -137,7 +164,7 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame()) : Application() {
     }
 
     private fun restart() {
-        game = game.javaClass.newInstance()
+        game = SudokuGame(level)
         game.addObserver(this)
         for (row in 0..8) {
             for (col in 0..8) {
