@@ -1,16 +1,18 @@
+package util
+
 internal object Solver {
 
     lateinit var grid: Array<IntArray>
 
     fun solvable(grid: Array<IntArray>): Boolean {
-        this.grid = grid.copy()
+        Solver.grid = grid.copy()
         return solve()
     }
 
     fun solve(grid: Array<IntArray>): Array<IntArray>? {
-        this.grid = grid.copy()
+        Solver.grid = grid.copy()
         return if (solve()) {
-            this.grid
+            Solver.grid
         } else null
     }
 

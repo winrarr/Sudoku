@@ -1,3 +1,5 @@
+import util.Solver
+
 open class SudokuGame(level: Level) {
 
     private val observers = mutableListOf<SudokuGUI>()

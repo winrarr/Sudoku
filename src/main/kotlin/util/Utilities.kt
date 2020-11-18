@@ -1,3 +1,5 @@
+package util
+
 internal object Utilities {
     fun printArray(array: Array<IntArray>) = run {
         for (row in array) {
