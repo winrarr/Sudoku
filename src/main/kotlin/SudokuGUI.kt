@@ -1,5 +1,6 @@
 import javafx.application.Application
 import javafx.geometry.Pos
+import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.control.*
 import javafx.scene.input.KeyCode
@@ -36,7 +37,6 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
 
         val gridPane = GridPane()
         root.add(gridPane)
-        gridPane.fitToParentSize()
 
         for (row in 0..8) {
             for (col in 0..8) {
@@ -85,8 +85,8 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
             }
         }
 
-        stage.minWidthProperty().set(500.0)
-        stage.minHeightProperty().set(500.0)
+        stage.minWidth = 500.0
+        stage.minHeight = 500.0
         stage.show()
     }
 
@@ -107,19 +107,6 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
         }
         this.selected = position
         game.setSelected(position)
-    }
-
-    fun updateSquareAt(row: Int, col: Int) {
-        val num = game.getNumAt(row, col)
-        labelArray[row][col].text = if (num == 0) "" else num.toString()
-    }
-
-    fun hasWon() {
-        val alert = Alert(Alert.AlertType.INFORMATION)
-        alert.title = "Complete"
-        alert.headerText = null
-        alert.contentText = "Congratulations! You have solved the sudoku"
-        alert.showAndWait()
     }
 
     private fun getBorder(position: Pair<Int, Int>): Border {
@@ -211,5 +198,21 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
         helpMenu.items.add(shortcuts)
 
         return menuBar
+    }
+
+
+    //Observer
+
+    fun updateSquareAt(row: Int, col: Int) {
+        val num = game.getNumAt(row, col)
+        labelArray[row][col].text = if (num == 0) "" else num.toString()
+    }
+
+    fun hasWon() {
+        val alert = Alert(Alert.AlertType.INFORMATION)
+        alert.title = "Complete"
+        alert.headerText = null
+        alert.contentText = "Congratulations! You have solved the sudoku"
+        alert.showAndWait()
     }
 }
