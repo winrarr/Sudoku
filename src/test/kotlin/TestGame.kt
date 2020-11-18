@@ -6,7 +6,7 @@ class TestGame {
 
     @BeforeEach
     fun setUp() {
-        game = SudokuGame(SudokuGridStub())
+        game = SudokuGame(Level.EASY)
     }
 
     @Test
