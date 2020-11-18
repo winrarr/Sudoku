@@ -123,6 +123,7 @@ open class SudokuGame(level: Level) {
 
     fun isSolved(): Boolean {
 
+        //Check row
         for (row in 0..8) {
             val numbersLeft = (1..9).toMutableSet()
             for (col in 0..8) {
@@ -131,6 +132,7 @@ open class SudokuGame(level: Level) {
             if (numbersLeft.isNotEmpty()) return false
         }
 
+        // Check columns
         for (col in 0..8) {
             val numbersLeft = (1..9).toMutableSet()
             for (row in 0..8) {
@@ -139,6 +141,7 @@ open class SudokuGame(level: Level) {
             if (numbersLeft.isNotEmpty()) return false
         }
 
+        // Check boxes
         for (boxRow in 0..2) {
             for (boxCol in 0..2) {
                 val numbersLeft = (1..9).toMutableSet()
