@@ -31,80 +31,7 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
         val redBorder = Border(BorderStroke(Color.RED, BorderStrokeStyle.SOLID, CornerRadii.EMPTY,
             BorderWidths(3.0, 3.0, 3.0, 3.0, false, false, false, false)))
 
-        // Menu bar
-        val menuBar = MenuBar()
-
-        // File menu
-        val fileMenu = Menu("File")
-        menuBar.menus.add(fileMenu)
-
-        val newGame = MenuItem("New game")
-        newGame.setOnAction {
-            restart()
-        }
-        fileMenu.items.add(newGame)
-
-        val undo = MenuItem("Undo")
-        undo.setOnAction {
-            game.undo()
-        }
-        fileMenu.items.add(undo)
-
-        val redo = MenuItem("Redo")
-        redo.setOnAction {
-            game.redo()
-        }
-        fileMenu.items.add(redo)
-
-        val hint = MenuItem("Hint")
-        hint.setOnAction {
-            game.showRandomSolutionCell()
-        }
-        fileMenu.items.add(hint)
-
-        // Level
-        val levelMenu = Menu("Level")
-        menuBar.menus.add(levelMenu)
-
-        val easy = MenuItem("Easy")
-        easy.setOnAction {
-            level = Level.EASY
-            restart()
-        }
-        levelMenu.items.add(easy)
-
-        val medium = MenuItem("Medium")
-        medium.setOnAction {
-            level = Level.MEDIUM
-            restart()
-        }
-        levelMenu.items.add(medium)
-
-        val hard = MenuItem("Hard")
-        hard.setOnAction {
-            level = Level.HARD
-            restart()
-        }
-        levelMenu.items.add(hard)
-
-        //Help menu
-        val helpMenu = Menu("Help")
-        menuBar.menus.add(helpMenu)
-
-        val shortcuts = MenuItem("Shortcuts")
-        shortcuts.setOnAction {
-            val alert = Alert(Alert.AlertType.INFORMATION)
-            alert.title = "Shortcuts"
-            alert.headerText = null
-            alert.contentText =
-                  "CTRL + SPACE:     Hint (fill out a random square)\n" +
-                  "ESCAPE:     Delete the number at the selected square" +
-                  "CTRL + Z:     Undo\n" +
-                  "CTRL + Y:     Redo"
-            alert.showAndWait()
-        }
-        helpMenu.items.add(shortcuts)
-
+        val menuBar = makeMenuBar()
         val root = VBox(menuBar)
 
         val gridPane = GridPane()
@@ -182,6 +109,19 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
         game.setSelected(position)
     }
 
+    fun updateSquareAt(row: Int, col: Int) {
+        val num = game.getNumAt(row, col)
+        labelArray[row][col].text = if (num == 0) "" else num.toString()
+    }
+
+    fun hasWon() {
+        val alert = Alert(Alert.AlertType.INFORMATION)
+        alert.title = "Complete"
+        alert.headerText = null
+        alert.contentText = "Congratulations! You have solved the sudoku"
+        alert.showAndWait()
+    }
+
     private fun getBorder(position: Pair<Int, Int>): Border {
         val row = position.first
         val col = position.second
@@ -195,16 +135,81 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
             BorderWidths(topSize, rightSize, botSize, leftSize, false, false, false, false)))
     }
 
-    fun updateSquareAt(row: Int, col: Int) {
-        val num = game.getNumAt(row, col)
-        labelArray[row][col].text = if (num == 0) "" else num.toString()
-    }
+    private fun makeMenuBar(): MenuBar {
+        // Menu bar
+        val menuBar = MenuBar()
 
-    fun hasWon() {
-        val alert = Alert(Alert.AlertType.INFORMATION)
-        alert.title = "Complete"
-        alert.headerText = null
-        alert.contentText = "Congratulations! You have solved the sudoku"
-        alert.showAndWait()
+        // File menu
+        val fileMenu = Menu("File")
+        menuBar.menus.add(fileMenu)
+
+        val newGame = MenuItem("New game")
+        newGame.setOnAction {
+            restart()
+        }
+        fileMenu.items.add(newGame)
+
+        val undo = MenuItem("Undo")
+        undo.setOnAction {
+            game.undo()
+        }
+        fileMenu.items.add(undo)
+
+        val redo = MenuItem("Redo")
+        redo.setOnAction {
+            game.redo()
+        }
+        fileMenu.items.add(redo)
+
+        val hint = MenuItem("Hint")
+        hint.setOnAction {
+            game.showRandomSolutionCell()
+        }
+        fileMenu.items.add(hint)
+
+        // Level
+        val levelMenu = Menu("Level")
+        menuBar.menus.add(levelMenu)
+
+        val easy = MenuItem("Easy")
+        easy.setOnAction {
+            level = Level.EASY
+            restart()
+        }
+        levelMenu.items.add(easy)
+
+        val medium = MenuItem("Medium")
+        medium.setOnAction {
+            level = Level.MEDIUM
+            restart()
+        }
+        levelMenu.items.add(medium)
+
+        val hard = MenuItem("Hard")
+        hard.setOnAction {
+            level = Level.HARD
+            restart()
+        }
+        levelMenu.items.add(hard)
+
+        //Help menu
+        val helpMenu = Menu("Help")
+        menuBar.menus.add(helpMenu)
+
+        val shortcuts = MenuItem("Shortcuts")
+        shortcuts.setOnAction {
+            val alert = Alert(Alert.AlertType.INFORMATION)
+            alert.title = "Shortcuts"
+            alert.headerText = null
+            alert.contentText =
+                "CTRL + SPACE:     Hint (fill out a random square)\n" +
+                        "ESCAPE:     Delete the number at the selected square" +
+                        "CTRL + Z:     Undo\n" +
+                        "CTRL + Y:     Redo"
+            alert.showAndWait()
+        }
+        helpMenu.items.add(shortcuts)
+
+        return menuBar
     }
 }

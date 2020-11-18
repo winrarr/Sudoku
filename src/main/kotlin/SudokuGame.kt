@@ -1,13 +1,15 @@
+import util.Solver
+
 open class SudokuGame(level: Level) {
 
     private val observers = mutableListOf<SudokuGUI>()
 
     private val sudokuGrid = SudokuGrid(level)
-    private var grid: Array<IntArray> = sudokuGrid.getGrid()
-    private var givenNumbers: Array<IntArray> = sudokuGrid.getGrid()
-    private var moveHistory = mutableListOf<Move>()
+    private val grid: Array<IntArray> = sudokuGrid.getGrid()
+    private val givenNumbers: Array<IntArray> = sudokuGrid.getGrid()
+    private val moveHistory = mutableListOf<Move>()
 
-    private var blanks = mutableSetOf<Pair<Int, Int>>()
+    private val blanks = mutableSetOf<Pair<Int, Int>>()
 
     private var moveCount = 0
 
@@ -121,6 +123,7 @@ open class SudokuGame(level: Level) {
 
     fun isSolved(): Boolean {
 
+        //Check row
         for (row in 0..8) {
             val numbersLeft = (1..9).toMutableSet()
             for (col in 0..8) {
@@ -129,6 +132,7 @@ open class SudokuGame(level: Level) {
             if (numbersLeft.isNotEmpty()) return false
         }
 
+        // Check columns
         for (col in 0..8) {
             val numbersLeft = (1..9).toMutableSet()
             for (row in 0..8) {
@@ -137,6 +141,7 @@ open class SudokuGame(level: Level) {
             if (numbersLeft.isNotEmpty()) return false
         }
 
+        // Check boxes
         for (boxRow in 0..2) {
             for (boxCol in 0..2) {
                 val numbersLeft = (1..9).toMutableSet()
