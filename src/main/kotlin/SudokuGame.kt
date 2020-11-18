@@ -5,11 +5,11 @@ open class SudokuGame(level: Level) {
     private val observers = mutableListOf<SudokuGUI>()
 
     private val sudokuGrid = SudokuGrid(level)
-    private var grid: Array<IntArray> = sudokuGrid.getGrid()
-    private var givenNumbers: Array<IntArray> = sudokuGrid.getGrid()
-    private var moveHistory = mutableListOf<Move>()
+    private val grid: Array<IntArray> = sudokuGrid.getGrid()
+    private val givenNumbers: Array<IntArray> = sudokuGrid.getGrid()
+    private val moveHistory = mutableListOf<Move>()
 
-    private var blanks = mutableSetOf<Pair<Int, Int>>()
+    private val blanks = mutableSetOf<Pair<Int, Int>>()
 
     private var moveCount = 0
 
