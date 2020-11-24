@@ -2,11 +2,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class TestGame {
-    private lateinit var game: SudokuGame
+    private lateinit var game: SudokuGameImpl
 
     @BeforeEach
     fun setUp() {
-        game = SudokuGame(Level.EASY)
+        game = SudokuGameImpl(Level.EASY)
     }
 
     @Test

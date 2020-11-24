@@ -1,6 +1,6 @@
 import javafx.application.Application
+import javafx.event.Event
 import javafx.geometry.Pos
-import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.control.*
 import javafx.scene.input.KeyCode
@@ -8,10 +8,18 @@ import javafx.scene.layout.*
 import javafx.scene.paint.Color
 import javafx.scene.text.Font
 import javafx.stage.Stage
-import tornadofx.add
-import tornadofx.fitToParentSize
+import tornadofx.*
+import java.lang.RuntimeException
 
-class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Application() {
+interface SudokuObserver {
+    fun updateSquareAt(row: Int, col: Int)
+    fun hasWon()
+}
+
+class SudokuGUI(private var game: SudokuGameImpl = SudokuGameImpl(Level.EASY)) : Application(), SudokuObserver {
+
+    private val redBorder = Border(BorderStroke(Color.RED, BorderStrokeStyle.SOLID, CornerRadii.EMPTY,
+        BorderWidths(3.0, 3.0, 3.0, 3.0, false, false, false, false)))
 
     private var level = Level.EASY
 
@@ -29,9 +37,6 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
         game.addObserver(this)
         labelArray = Array(9) { Array(9) { Label() } }
 
-        val redBorder = Border(BorderStroke(Color.RED, BorderStrokeStyle.SOLID, CornerRadii.EMPTY,
-            BorderWidths(3.0, 3.0, 3.0, 3.0, false, false, false, false)))
-
         val menuBar = makeMenuBar()
         val root = VBox(menuBar)
 
@@ -44,7 +49,6 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
 
                 square.setOnMouseClicked {
                     setSelected(row to col)
-                    square.border = redBorder
                 }
 
                 square.border = getBorder(row to col)
@@ -58,12 +62,19 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
             }
         }
 
-        stage.scene = Scene(root, 500.0, 500.0)
+        val scene = Scene(root, 500.0, 500.0)
+
+        scene.stylesheets.add(javaClass.getResource("styles.css").toExternalForm())
+        importStylesheet(javaClass.getResource("styles.css").toExternalForm())
+
+        stage.scene = scene
 
         stage.scene.setOnKeyPressed { e ->
             when {
+                e.code == KeyCode.UP || e.code == KeyCode.RIGHT || e.code == KeyCode.DOWN || e.code == KeyCode.LEFT ->
+                    moveSelectedInDirection(e.code)
                 e.text.matches("\\d".toRegex()) && game.getSelectedNum() != null -> game.setSelectedNum(e.text.toInt())
-                e.code == KeyCode.ESCAPE -> game.deleteSelectedNum()
+                e.code == KeyCode.DELETE -> game.deleteSelectedNum()
                 e.isControlDown && e.text == "z" -> game.undo()
                 e.isControlDown && e.text == "y" -> game.redo()
                 e.isControlDown && e.code == KeyCode.SPACE -> {
@@ -85,13 +96,23 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
             }
         }
 
-        stage.minWidth = 500.0
-        stage.minHeight = 500.0
+        stage.minWidth = 700.0
+        stage.minHeight = 700.0
         stage.show()
     }
 
+    private fun moveSelectedInDirection(code: KeyCode) {
+        val selected = selected ?: return
+        when (code) {
+            KeyCode.UP -> setSelected(selected.first - 1 to selected.second)
+            KeyCode.RIGHT -> setSelected(selected.first to selected.second + 1)
+            KeyCode.DOWN -> setSelected(selected.first + 1 to selected.second)
+            KeyCode.LEFT -> setSelected(selected.first to selected.second - 1)
+        }
+    }
+
     private fun restart() {
-        game = SudokuGame(level)
+        game = SudokuGameImpl(level)
         game.addObserver(this)
         for (row in 0..8) {
             for (col in 0..8) {
@@ -105,6 +126,7 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
         if (selected != null) {
             labelArray[selected.first][selected.second].border = getBorder(selected)
         }
+        labelArray[position.first][position.second].border = redBorder
         this.selected = position
         game.setSelected(position)
     }
@@ -189,10 +211,10 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
             alert.title = "Shortcuts"
             alert.headerText = null
             alert.contentText =
-                "CTRL + SPACE:     Hint (fill out a random square)\n" +
-                        "ESCAPE:     Delete the number at the selected square\n" +
-                        "CTRL + Z:     Undo\n" +
-                        "CTRL + Y:     Redo"
+                """CTRL + SPACE:     Hint (fill out a random square)\n +
+                    DELETE:     Delete the number at the selected square\n +
+                    CTRL + Z:     Undo\n +
+                    CTRL + Y:     Redo"""
             alert.showAndWait()
         }
         helpMenu.items.add(shortcuts)
@@ -203,12 +225,12 @@ class SudokuGUI(private var game: SudokuGame = SudokuGame(Level.EASY)) : Applica
 
     //Observer
 
-    fun updateSquareAt(row: Int, col: Int) {
+    override fun updateSquareAt(row: Int, col: Int) {
         val num = game.getNumAt(row, col)
         labelArray[row][col].text = if (num == 0) "" else num.toString()
     }
 
-    fun hasWon() {
+    override fun hasWon() {
         val alert = Alert(Alert.AlertType.INFORMATION)
         alert.title = "Complete"
         alert.headerText = null

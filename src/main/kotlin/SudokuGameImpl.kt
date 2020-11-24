@@ -1,8 +1,19 @@
 import util.Solver
 
-open class SudokuGame(level: Level) {
+interface SudokuGame {
+    fun addObserver(observer: SudokuObserver)
+    fun getNumAt(row: Int, col: Int): Int
+    fun setSelected(position: Pair<Int, Int>)
+    fun getSelectedNum(): Int?
+    fun deleteSelectedNum()
+    fun undo()
+    fun redo()
+    fun showRandomSolutionCell(): Pair<Boolean, Boolean>
+}
 
-    private val observers = mutableListOf<SudokuGUI>()
+open class SudokuGameImpl(level: Level): SudokuGame {
+
+    private val observers = mutableListOf<SudokuObserver>()
 
     private val sudokuGrid = SudokuGrid(level)
     private val grid: Array<IntArray> = sudokuGrid.getGrid()
@@ -25,20 +36,20 @@ open class SudokuGame(level: Level) {
         }
     }
 
-    fun addObserver(observer: SudokuGUI) {
+    override fun addObserver(observer: SudokuObserver) {
         observers.add(observer)
     }
 
-    fun setSelected(position: Pair<Int, Int>) {
+    override fun setSelected(position: Pair<Int, Int>) {
         selected = position
     }
 
-    fun getSelectedNum(): Int? {
+    override fun getSelectedNum(): Int? {
         val selected = selected
         return selected?.let { getNumAt(selected.first, selected.second) }
     }
 
-    fun getNumAt(row: Int, col: Int): Int {
+    override fun getNumAt(row: Int, col: Int): Int {
         return grid[row][col]
     }
 
@@ -53,12 +64,12 @@ open class SudokuGame(level: Level) {
         if (selectedIsGiven()) return false
         val selected = selected ?: return false
         moveCount++
-        addMoveToHistory(getSelectedNum()!!, num)
+        addMoveToHistory(selected, getSelectedNum()!!, num)
         setNumAt(selected.first, selected.second, num)
         return true
     }
 
-    private fun addMoveToHistory(from: Int, to: Int) {
+    private fun addMoveToHistory(position: Pair<Int, Int>, from: Int, to: Int) {
         val selected = selected!!
         val move = Move(selected.first, selected.second, from, to)
         if (moveCount > moveHistory.size - 1) {
@@ -78,13 +89,14 @@ open class SudokuGame(level: Level) {
         notifyCellUpdated(row, col)
     }
 
-    fun deleteSelectedNum() {
-        val selected = selected
-        selected?.let { deleteAt(selected.first, selected.second) }
+    override fun deleteSelectedNum() {
+        val selected = selected ?: return
+        addMoveToHistory(selected, getSelectedNum()!!, 0)
+        deleteAt(selected.first, selected.second)
         moveCount++
     }
 
-    fun showRandomSolutionCell(): Pair<Boolean, Boolean> {
+    override fun showRandomSolutionCell(): Pair<Boolean, Boolean> {
         val (row, col) = getRandomBlank() ?: return true to false
         val solution = getSolutionAt(row, col) ?: return false to true
         setNumAt(row, col, solution)
@@ -99,13 +111,13 @@ open class SudokuGame(level: Level) {
         return Solver.solve(grid)?.let { it[row][col] }
     }
 
-     fun undo() {
+     override fun undo() {
          if (moveCount > 0) moveCount--
          val move = moveHistory[moveCount]
          setNumAt(move.row, move.col, move.before)
     }
 
-    fun redo() {
+    override fun redo() {
         if (moveCount >= moveHistory.size) return
         val move = moveHistory[moveCount]
         setNumAt(move.row, move.col, move.after)
@@ -114,7 +126,7 @@ open class SudokuGame(level: Level) {
 
     private fun checkSolved() {
         if (isSolved()) {
-            observers.forEach(SudokuGUI::hasWon)
+            observers.forEach(SudokuObserver::hasWon)
         }
     }
 
