@@ -4,6 +4,7 @@ import javafx.geometry.Pos
 import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.control.*
+import javafx.scene.image.Image
 import javafx.scene.input.KeyCode
 import javafx.scene.layout.*
 import javafx.scene.paint.Color
@@ -41,6 +42,7 @@ class SudokuGUI : Application(), SudokuObserver {
         stage.scene = makeScene(makeRoot())
         stage.minWidth = 700.0
         stage.minHeight = 700.0
+        stage.icons.add(Image(javaClass.getResourceAsStream("icon.png")));
         stage.show()
     }
 
