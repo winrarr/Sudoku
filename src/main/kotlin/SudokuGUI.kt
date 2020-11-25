@@ -1,6 +1,7 @@
 import javafx.application.Application
-import javafx.event.Event
+import javafx.geometry.Insets
 import javafx.geometry.Pos
+import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.control.*
 import javafx.scene.input.KeyCode
@@ -14,17 +15,20 @@ import java.lang.RuntimeException
 interface SudokuObserver {
     fun updateSquareAt(row: Int, col: Int)
     fun hasWon()
+    fun mistakeAt(row: Int, col: Int)
 }
 
-class SudokuGUI(private var game: SudokuGameImpl = SudokuGameImpl(Level.EASY)) : Application(), SudokuObserver {
+class SudokuGUI : Application(), SudokuObserver {
 
-    private val redBorder = Border(BorderStroke(Color.RED, BorderStrokeStyle.SOLID, CornerRadii.EMPTY,
-        BorderWidths(3.0, 3.0, 3.0, 3.0, false, false, false, false)))
+    private val selectedBorder = Border(BorderStroke(Color.web("#500050"), BorderStrokeStyle.SOLID, CornerRadii.EMPTY,
+        BorderWidths(2.0, 2.0, 2.0, 2.0, false, false, false, false)))
+    private val stdBg = Background(BackgroundFill(Color.web("#121122"), CornerRadii.EMPTY, Insets.EMPTY))
+    private var beforeBg = Background(BackgroundFill(Color.web("#121122"), CornerRadii.EMPTY, Insets.EMPTY))
+    private val selectedBg = Background(BackgroundFill(Color.web("#1A1832"), CornerRadii.EMPTY, Insets.EMPTY))
 
+    private lateinit var game: SudokuGame
     private var level = Level.EASY
-
-    private lateinit var labelArray: Array<Array<Label>>
-
+    private var labelArray: Array<Array<Label>> = Array(9) { Array(9) { Label() } }
     private var selected: Pair<Int, Int>? = null
 
     override fun start(primaryStage: Stage) {
@@ -32,86 +36,15 @@ class SudokuGUI(private var game: SudokuGameImpl = SudokuGameImpl(Level.EASY)) :
     }
 
     private fun init(stage: Stage) {
+        startNewGame()
 
-        // Initialise
-        game.addObserver(this)
-        labelArray = Array(9) { Array(9) { Label() } }
-
-        val menuBar = makeMenuBar()
-        val root = VBox(menuBar)
-
-        val gridPane = GridPane()
-        root.add(gridPane)
-
-        for (row in 0..8) {
-            for (col in 0..8) {
-                val square = labelArray[row][col]
-
-                square.setOnMouseClicked {
-                    setSelected(row to col)
-                }
-
-                square.border = getBorder(row to col)
-                square.font = Font.font(30.0)
-                square.alignment = Pos.CENTER
-                val gridNum = game.getNumAt(row, col)
-                square.text = if (gridNum != 0) gridNum.toString() else ""
-
-                gridPane.add(square, col, row)
-                square.fitToParentSize()
-            }
-        }
-
-        val scene = Scene(root, 500.0, 500.0)
-
-        scene.stylesheets.add(javaClass.getResource("styles.css").toExternalForm())
-        importStylesheet(javaClass.getResource("styles.css").toExternalForm())
-
-        stage.scene = scene
-
-        stage.scene.setOnKeyPressed { e ->
-            when {
-                e.code == KeyCode.UP || e.code == KeyCode.RIGHT || e.code == KeyCode.DOWN || e.code == KeyCode.LEFT ->
-                    moveSelectedInDirection(e.code)
-                e.text.matches("\\d".toRegex()) && game.getSelectedNum() != null -> game.setSelectedNum(e.text.toInt())
-                e.code == KeyCode.DELETE -> game.deleteSelectedNum()
-                e.isControlDown && e.text == "z" -> game.undo()
-                e.isControlDown && e.text == "y" -> game.redo()
-                e.isControlDown && e.code == KeyCode.SPACE -> {
-                    val (solvable, isBlank) = game.showRandomSolutionCell()
-                    if (!solvable) {
-                        val alert = Alert(Alert.AlertType.ERROR)
-                        alert.title = "Unsolvable"
-                        alert.headerText = null
-                        alert.contentText = "The current sudoku could not be solved, you have made a mistake"
-                        alert.showAndWait()
-                    } else if (!isBlank) {
-                        val alert = Alert(Alert.AlertType.INFORMATION)
-                        alert.title = "Complete"
-                        alert.headerText = null
-                        alert.contentText = "The sudoku is already complete"
-                        alert.showAndWait()
-                    }
-                }
-            }
-        }
-
+        stage.scene = makeScene(makeRoot())
         stage.minWidth = 700.0
         stage.minHeight = 700.0
         stage.show()
     }
 
-    private fun moveSelectedInDirection(code: KeyCode) {
-        val selected = selected ?: return
-        when (code) {
-            KeyCode.UP -> setSelected(selected.first - 1 to selected.second)
-            KeyCode.RIGHT -> setSelected(selected.first to selected.second + 1)
-            KeyCode.DOWN -> setSelected(selected.first + 1 to selected.second)
-            KeyCode.LEFT -> setSelected(selected.first to selected.second - 1)
-        }
-    }
-
-    private fun restart() {
+    private fun startNewGame() {
         game = SudokuGameImpl(level)
         game.addObserver(this)
         for (row in 0..8) {
@@ -121,32 +54,83 @@ class SudokuGUI(private var game: SudokuGameImpl = SudokuGameImpl(Level.EASY)) :
         }
     }
 
+    private fun moveSelectedInDirection(code: KeyCode) {
+        val selected = selected ?: return
+        when (code) {
+            KeyCode.UP -> setSelected(selected.first - 1 to selected.second)
+            KeyCode.RIGHT -> setSelected(selected.first to selected.second + 1)
+            KeyCode.DOWN -> setSelected(selected.first + 1 to selected.second)
+            KeyCode.LEFT -> setSelected(selected.first to selected.second - 1)
+            else -> throw RuntimeException("Unexpected direction, keycode: $code")
+        }
+    }
+
     private fun setSelected(position: Pair<Int, Int>) {
         val selected = selected
         if (selected != null) {
-            labelArray[selected.first][selected.second].border = getBorder(selected)
+            val label = labelArray[selected.first][selected.second]
+            label.background = beforeBg
+            label.border = makeBorder(selected)
         }
-        labelArray[position.first][position.second].border = redBorder
+        val selectedLabel = labelArray[position.first][position.second]
+        beforeBg = selectedLabel.background
+        selectedLabel.background = selectedBg
+        selectedLabel.border = selectedBorder
         this.selected = position
         game.setSelected(position)
     }
 
-    private fun getBorder(position: Pair<Int, Int>): Border {
-        val row = position.first
-        val col = position.second
 
-        val topSize = if (row % 3 == 0) 2.0 else 1.0
-        val rightSize = if (col % 3 == 2) 2.0 else 1.0
-        val botSize = if (row % 3 == 2) 2.0 else 1.0
-        val leftSize = if (col % 3 == 0) 2.0 else 1.0
+    // Window elements and layout
 
-        return Border(BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY,
-            BorderWidths(topSize, rightSize, botSize, leftSize, false, false, false, false)))
+    private fun makeScene(parent: Parent): Scene {
+        val scene = Scene(parent, 500.0, 500.0)
+
+        scene.stylesheets.add(javaClass.getResource("styles.css").toExternalForm())
+
+        scene.setOnKeyPressed { e ->
+            when {
+                e.code == KeyCode.UP || e.code == KeyCode.RIGHT || e.code == KeyCode.DOWN || e.code == KeyCode.LEFT ->
+                    moveSelectedInDirection(e.code)
+                e.text.matches("\\d".toRegex()) && game.getSelectedNum() != null -> game.setSelectedNum(e.text.toInt())
+                e.code == KeyCode.DELETE -> game.deleteSelectedNum()
+                e.isControlDown && e.text == "z" -> game.undo()
+                e.isControlDown && e.text == "y" -> game.redo()
+                e.isControlDown && e.code == KeyCode.SPACE -> {
+                    game.showRandomSolutionCell()
+                    val selected = selected
+                    if (selected != null) {
+                        beforeBg = labelArray[selected.first][selected.second].background
+                    }
+                }
+            }
+        }
+
+        return scene
+    }
+
+    private fun makeRoot(): Parent {
+        val menuBar = makeMenuBar()
+        val root = VBox(menuBar)
+
+        val gridPane = GridPane()
+        root.add(gridPane)
+
+        for (row in 0..8) {
+            for (col in 0..8) {
+                val square = makeLabel(row, col)
+                gridPane.add(square, col, row)
+                square.fitToParentSize()
+            }
+        }
+
+        return root
     }
 
     private fun makeMenuBar(): MenuBar {
         // Menu bar
         val menuBar = MenuBar()
+        menuBar.border = Border(BorderStroke(Color.web("#53517d"), BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths(1.0, 1.0, 1.0, 1.0, false, false, false, false)))
 
         // File menu
         val fileMenu = Menu("File")
@@ -154,7 +138,7 @@ class SudokuGUI(private var game: SudokuGameImpl = SudokuGameImpl(Level.EASY)) :
 
         val newGame = MenuItem("New game")
         newGame.setOnAction {
-            restart()
+            startNewGame()
         }
         fileMenu.items.add(newGame)
 
@@ -183,21 +167,21 @@ class SudokuGUI(private var game: SudokuGameImpl = SudokuGameImpl(Level.EASY)) :
         val easy = MenuItem("Easy")
         easy.setOnAction {
             level = Level.EASY
-            restart()
+            startNewGame()
         }
         levelMenu.items.add(easy)
 
         val medium = MenuItem("Medium")
         medium.setOnAction {
             level = Level.MEDIUM
-            restart()
+            startNewGame()
         }
         levelMenu.items.add(medium)
 
         val hard = MenuItem("Hard")
         hard.setOnAction {
             level = Level.HARD
-            restart()
+            startNewGame()
         }
         levelMenu.items.add(hard)
 
@@ -222,12 +206,43 @@ class SudokuGUI(private var game: SudokuGameImpl = SudokuGameImpl(Level.EASY)) :
         return menuBar
     }
 
+    private fun makeLabel(row: Int, col: Int): Label {
+        val square = labelArray[row][col]
+        labelArray[row][col]
 
-    //Observer
+        square.setOnMouseClicked { setSelected(row to col) }
+
+        square.border = makeBorder(row to col)
+        square.font = Font.font(30.0)
+        square.alignment = Pos.CENTER
+
+        return square
+    }
+
+    private fun makeBorder(position: Pair<Int, Int>): Border {
+        val (row, col) = position
+
+        val topColour = if (row % 3 == 0) Color.web("#53517d") else Color.web("#22253c")
+        val rightColour = if (col % 3 == 2) Color.web("#53517d") else Color.web("#22253c")
+        val botColour = if (row % 3 == 2) Color.web("#53517d") else Color.web("#22253c")
+        val leftColour = if (col % 3 == 0) Color.web("#53517d") else Color.web("#22253c")
+
+        return Border(
+            BorderStroke(topColour, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths(1.0, 0.0, 0.0, 0.0, false, false, false, false)),
+            BorderStroke(rightColour, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths(0.0, 1.0, 0.0, 0.0, false, false, false, false)),
+            BorderStroke(botColour, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths(0.0, 0.0, 1.0, 0.0, false, false, false, false)),
+            BorderStroke(leftColour, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths(0.0, 0.0, 0.0, 1.0, false, false, false, false))
+        )
+    }
+
+
+    // Observer
 
     override fun updateSquareAt(row: Int, col: Int) {
         val num = game.getNumAt(row, col)
-        labelArray[row][col].text = if (num == 0) "" else num.toString()
+        val label = labelArray[row][col]
+        label.text = if (num == 0) "" else num.toString()
+        beforeBg = stdBg
     }
 
     override fun hasWon() {
@@ -236,5 +251,9 @@ class SudokuGUI(private var game: SudokuGameImpl = SudokuGameImpl(Level.EASY)) :
         alert.headerText = null
         alert.contentText = "Congratulations! You have solved the sudoku"
         alert.showAndWait()
+    }
+
+    override fun mistakeAt(row: Int, col: Int) {
+        labelArray[row][col].background = Background(BackgroundFill(Color.web("#220f1e"), CornerRadii.EMPTY, Insets.EMPTY))
     }
 }

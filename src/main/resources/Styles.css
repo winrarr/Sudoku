@@ -1,3 +1,8 @@
-* {
-    -fx-background-color: #ffffff;
+.label {
+    -fx-background-color: #121122;
+    -fx-text-fill: #b7b4ec;
+}
+
+.menu-bar {
+    -fx-background-color: #121122;
 }

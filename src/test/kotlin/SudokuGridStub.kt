@@ -1,4 +1,4 @@
-class SudokuGridStub : SudokuGrid() {
+class SudokuGridStub : SudokuGrid {
 
     override fun getGrid(): Array<IntArray> {
         return arrayOf(

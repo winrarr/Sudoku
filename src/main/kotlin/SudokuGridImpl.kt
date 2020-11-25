@@ -1,7 +1,11 @@
 import util.Solver
 import kotlin.random.Random
 
-open class SudokuGrid(private val level: Level = Level.EASY) {
+interface SudokuGrid {
+    fun getGrid(): Array<IntArray>
+}
+
+class SudokuGridImpl(private val level: Level = Level.EASY): SudokuGrid {
 
     private var grid = Array(9) { IntArray(9) {0} }
 
@@ -11,7 +15,7 @@ open class SudokuGrid(private val level: Level = Level.EASY) {
         newGrid()
     }
 
-    open fun getGrid() = grid.copy()
+    override fun getGrid() = grid.copy()
 
     private fun newGrid() {
         fillDiagonalBoxes()
